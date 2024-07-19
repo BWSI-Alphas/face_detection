@@ -5,18 +5,28 @@ import numpy as np
 from matplotlib import pyplot as plt
 import cv2
 import re
-# Import tensorflow dependencies - Functional API
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Layer, Conv2D, Dense, MaxPooling2D, Input, Flatten
-import tensorflow as tf
+# # Import tensorflow dependencies - Functional API
+# from tensorflow.keras.models import Model
+# from tensorflow.keras.layers import Layer, Conv2D, Dense, MaxPooling2D, Input, Flatten
+# import tensorflow as tf
+
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress informational messages
+
+
+# print("TensorFlow version:", tf.__version__)
+# print(cv2.__version__)
+
+# #%%
+# # Avoid OOM errors by setting GPU Memory Consumption Growth
+# gpus = tf.config.experimental.list_physical_devices('GPU')
+# if gpus:
+#     for gpu in gpus: 
+#         tf.config.experimental.set_memory_growth(gpu, True)
+# else:
+#     print("No GPU found")
 #%%
-# Avoid OOM errors by setting GPU Memory Consumption Growth
-gpus = tf.config.experimental.list_physical_devices('GPU')
-for gpu in gpus: 
-    tf.config.experimental.set_memory_growth(gpu, True)
-#%%
-# Get the current working directory
-desired_dir = r'C:\Users\Noah Lee\OneDrive\Documents\GitHub\face_detection'
+# Get the current working directoryp
+desired_dir = '/Users/joy/Desktop/face_detection'
 os.chdir(desired_dir)
 
 # Verify the working directory
@@ -74,31 +84,34 @@ while cap.isOpened():
             center_y = y + h // 2
             # print(center_x)
             # print(center_y)
-    cropped_frame = frame[center_y - 125: center_y + 125, center_x - 125: center_x + 125, :]
-        
-    #Collect anchors
-    if cv2.waitKey(1) & 0XFF == ord('a'):
-        #Create unique name
-        imgname = os.path.join(ANC_PATH, '{}.jpg'.format(uuid.uuid1()))
-        # Write out positive image
-        cv2.imwrite(imgname, cropped_frame)
-        pass
-        
-    #Collect Positives
-    if cv2.waitKey(1) & 0XFF == ord('p'):
-        #Create unique name
-        imgname = os.path.join(POS_PATH, '{}.jpg'.format(uuid.uuid1()))
-        # Write out positive image
-        cv2.imwrite(imgname, cropped_frame)
-        pass
-        
     
+    cropped_frame = frame[center_y - 150: center_y + 150, center_x - 150: center_x + 150, :]
+    imgname = os.path.join(ANC_PATH, '{}.jpg'.format(uuid.uuid1()))
+        # Write out image
+    cv2.imwrite(imgname, cropped_frame)
+    #Collect anchors
+    key = cv2.waitKey(1) & 0xFF
+
+    if key == ord('a'):
+        # Create unique name
+        imgname = os.path.join(ANC_PATH, '{}.jpg'.format(uuid.uuid1()))
+        # Write out image
+        cv2.imwrite(imgname, cropped_frame)
+        print("piko")
+    
+    if key == ord('p'):
+        # Create unique name
+        imgname = os.path.join(POS_PATH, '{}.jpg'.format(uuid.uuid1()))
+        # Write out image
+        cv2.imwrite(imgname, cropped_frame)
+        print("picu")
+
+    if key == ord('q'):
+        break
     cv2.imshow('Image', frame)
     cv2.imshow('Cropped Image', cropped_frame)
     # Breaking gracefully
-    if cv2.waitKey(1) & 0XFF == ord('q'):
-        break
-        
+    
 # Release the webcam
 cap.release()
 # Close the image show frame
