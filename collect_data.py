@@ -49,30 +49,14 @@ if not os.path.exists(ANC_PATH):
 #         NEW_PATH = os.path.join(NEG_PATH, file)
 #         os.replace(EX_PATH, NEW_PATH)
 #%%
-name = "Noah_Lee"
-# Function to get the next index
-def get_next_index(path, base_name):
-    if not os.path.exists(path):
-        os.makedirs(path)
-    
-    files = os.listdir(path)
-    indices = []
-    
-    # Regular expression to match files of the form base_name_index.jpg
-    pattern = re.compile(rf'{base_name}_(\d+)\.jpg')
-    
-    for file in files:
-        match = pattern.match(file)
-        if match:
-            indices.append(int(match.group(1)))
-    
-    return max(indices, default=-1) + 1
+import uuid
 
-index = 0
 #%%
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 #%%
 cap = cv2.VideoCapture(0)
+
+center_x, center_y = 125, 125
 
 while cap.isOpened(): 
     ret, frame = cap.read()
@@ -81,21 +65,20 @@ while cap.isOpened():
     
     faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, 
                                           minSize=(30, 30), flags=cv2.CASCADE_SCALE_IMAGE)
-    center_x = 310
-    center_y = 260
-    for (x, y, w, h) in faces:
-            #cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-            center_x = x + w // 2
-            center_y = y + h // 2
-            # print(center_x)
-            # print(center_y)
+
+    if len(faces) > 0:
+        for (x, y, w, h) in faces:
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+                center_x = x + w // 2
+                center_y = y + h // 2
+                # print(center_x)
+                # print(center_y)
     cropped_frame = frame[center_y - 125: center_y + 125, center_x - 125: center_x + 125, :]
-    
+        
     #Collect anchors
     if cv2.waitKey(1) & 0XFF == ord('a'):
         #Create unique name
-        imgname = os.path.join(ANC_PATH, f'{name}_{index}.jpg')
-        index = get_next_index(ANC_PATH, name)
+        imgname = os.path.join(ANC_PATH, '{}.jpg'.format(uuid.uuid1()))
         # Write out positive image
         cv2.imwrite(imgname, cropped_frame)
         pass
@@ -103,8 +86,7 @@ while cap.isOpened():
     #Collect Positives
     if cv2.waitKey(1) & 0XFF == ord('p'):
         #Create unique name
-        imgname = os.path.join(POS_PATH, f'{name}_{index}.jpg')
-        index = get_next_index(POS_PATH, name)
+        imgname = os.path.join(POS_PATH, '{}.jpg'.format(uuid.uuid1()))
         # Write out positive image
         cv2.imwrite(imgname, cropped_frame)
         pass
