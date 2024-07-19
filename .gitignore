@@ -1,2 +1,5 @@
-# ignore ALL .log files
+# ignore ALL .tgz files
 *.tgz
+
+# ignore collect_data.py bc of local repos
+collect_data.py
