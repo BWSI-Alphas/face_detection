@@ -1,136 +1,112 @@
-#%%
 import os
-import random
-import numpy as np
-from matplotlib import pyplot as plt
+import uuid
 import cv2
-import re
-# Import tensorflow dependencies - Functional API
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Layer, Conv2D, Dense, MaxPooling2D, Input, Flatten
+import numpy as np
 import tensorflow as tf
-#%%
+
+base_name = "Noah"
+
 # Avoid OOM errors by setting GPU Memory Consumption Growth
 gpus = tf.config.experimental.list_physical_devices('GPU')
-for gpu in gpus: 
+for gpu in gpus:
     tf.config.experimental.set_memory_growth(gpu, True)
-#%%
+
 # Get the current working directory
-desired_dir = r'C:\Users\ewen2\Documents\GitHub\face_detection'
+desired_dir = r'C:\Users\Noah Lee\OneDrive\Documents\GitHub\face_detection'
 os.chdir(desired_dir)
 
 # Verify the working directory
 current_dir = os.getcwd()
 print(f"Current working directory: {current_dir}")
-#%%
+
 # Setup paths relative to the current directory
 POS_PATH = os.path.join(current_dir, 'data', 'positive')
 NEG_PATH = os.path.join(current_dir, 'data', 'negative')
 ANC_PATH = os.path.join(current_dir, 'data', 'anchor')
-#%%
+
 # Make the directories if they do not exist
-if not os.path.exists(POS_PATH):
-    os.makedirs(POS_PATH)
+os.makedirs(POS_PATH, exist_ok=True)
+os.makedirs(NEG_PATH, exist_ok=True)
+os.makedirs(ANC_PATH, exist_ok=True)
 
-if not os.path.exists(NEG_PATH):
-    os.makedirs(NEG_PATH)
-
-if not os.path.exists(ANC_PATH):
-    os.makedirs(ANC_PATH)
-# #%%
-# # http://vis-www.cs.umass.edu/lfw/
-# # Uncompress Tar GZ Labelled Faces in the Wild Dataset
-# !tar -xf lfw.tgz
-# #%%
-# # Move LFW Images to the following repository data/negative
-# for directory in os.listdir('lfw'):
-#     for file in os.listdir(os.path.join('lfw', directory)):
-#         EX_PATH = os.path.join('lfw', directory, file)
-#         NEW_PATH = os.path.join(NEG_PATH, file)
-#         os.replace(EX_PATH, NEW_PATH)
-#%%
-import uuid
-
-#%%
+# Initialize face detector
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-#%%
+
+# Open the camera
 cap = cv2.VideoCapture(0)
 
-center_x, center_y = 125, 125
+total_images = 600
+images_per_cycle = 10
+number_of_cycles = total_images // (images_per_cycle * 2)
 
-while cap.isOpened(): 
+while cap.isOpened():
     ret, frame = cap.read()
-    
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    
-    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, 
-                                          minSize=(30, 30), flags=cv2.CASCADE_SCALE_IMAGE)
+    if not ret or frame is None:
+        print("Error: Failed to capture image or captured an empty frame.")
+        continue
 
-    if len(faces) > 0:
-        for (x, y, w, h) in faces:
-            #Uncomment to help debug
-            #cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-            center_x = x + w // 2
-            center_y = y + h // 2
-            # print(center_x)
-            # print(center_y)
-    cropped_frame = frame[center_y - 125: center_y + 125, center_x - 125: center_x + 125, :]
-        
-    #Collect anchors
-    if cv2.waitKey(1) & 0XFF == ord('a'):
-        #Create unique name
-        imgname = os.path.join(ANC_PATH, '{}.jpg'.format(uuid.uuid1()))
-        # Write out positive image
-        cv2.imwrite(imgname, cropped_frame)
-        pass
-        
-    #Collect Positives
-    if cv2.waitKey(1) & 0XFF == ord('p'):
-        #Create unique name
-        imgname = os.path.join(POS_PATH, '{}.jpg'.format(uuid.uuid1()))
-        # Write out positive image
-        cv2.imwrite(imgname, cropped_frame)
-        pass
-        
-    
-    cv2.imshow('Image', frame)
-    cv2.imshow('Cropped Image', cropped_frame)
-    # Breaking gracefully
-    if cv2.waitKey(1) & 0XFF == ord('q'):
+    cv2.putText(frame, 'Ready? Press "Q" to start capturing', (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.3, (0, 255, 0), 3, cv2.LINE_AA)
+    cv2.imshow('frame', frame)
+    key = cv2.waitKey(25)
+    if key == ord('q'):
         break
-        
+    if key == ord('t'):
+        cap.release()
+        cv2.destroyAllWindows()
+        exit()
+
+for cycle in range(number_of_cycles):
+    for j in range(2):  # 0 for positive, 1 for anchor
+        class_dir = POS_PATH if j == 0 else ANC_PATH
+        existing_images = len(os.listdir(class_dir))  # Count existing images to avoid overwriting
+
+        print(f'Collecting {images_per_cycle} images for class {j} at {class_dir}')
+
+        counter = 0
+        while counter < images_per_cycle:
+            ret, frame = cap.read()
+            if not ret or frame is None:
+                print("Error: Failed to capture image or captured an empty frame.")
+                continue
+
+            # Get the frame dimensions
+            h, w = frame.shape[:2]
+
+            # Calculate the center of the frame
+            center_x, center_y = w // 2, h // 2
+
+            # Define the size of the cropped region
+            crop_size = 250
+            half_crop_size = crop_size // 2
+
+            # Calculate the cropping coordinates
+            x1 = max(center_x - half_crop_size, 0)
+            y1 = max(center_y - half_crop_size, 0)
+            x2 = min(center_x + half_crop_size, w)
+            y2 = min(center_y + half_crop_size, h)
+
+            # Crop the center region
+            cropped_frame = frame[y1:y2, x1:x2]
+
+            # Resize the cropped frame to ensure it is 250x250 pixels
+            resized_frame = cv2.resize(cropped_frame, (250, 250))
+
+            # Display the resized frame
+            cv2.imshow('Resized Frame', resized_frame)
+
+            # Save the resized frame
+            img_filename = os.path.join(class_dir, '{}_{:04d}.jpg'.format(base_name, existing_images + counter))
+            cv2.imwrite(img_filename, resized_frame)
+
+            counter += 1
+
+            # Break out of the loop and cancel code if 'r' is pressed
+            if cv2.waitKey(10) & 0xff == ord('r'):
+                cap.release()
+                cv2.destroyAllWindows()
+                exit()
+
 # Release the webcam
 cap.release()
 # Close the image show frame
 cv2.destroyAllWindows()
-# %%
-plt.imshow(frame[120:120+250,200:250+250,:])
-plt.imshow(frame)
-# %%
-# def data_aug(img):
-#     data = []
-#     for i in range(9):
-#         img = tf.image.stateless_random_brightness(img, max_delta=0.02, seed=(1,2))
-#         img = tf.image.stateless_random_contrast(img, lower=0.6, upper=1, seed=(1,3))
-#         # img = tf.image.stateless_random_crop(img, size=(20,20,3), seed=(1,2))
-#         img = tf.image.stateless_random_flip_left_right(img, seed=(np.random.randint(100),np.random.randint(100)))
-#         img = tf.image.stateless_random_jpeg_quality(img, min_jpeg_quality=90, max_jpeg_quality=100, seed=(np.random.randint(100),np.random.randint(100)))
-#         img = tf.image.stateless_random_saturation(img, lower=0.9,upper=1, seed=(np.random.randint(100),np.random.randint(100)))
-            
-#         data.append(img)
-    
-#     return data
-# img_path = os.path.join(ANC_PATH, '924e839c-135f-11ec-b54e-a0cec8d2d278.jpg')
-# img = cv2.imread(img_path)
-# augmented_images = data_aug(img)
-
-# for image in augmented_images:
-#     cv2.imwrite(os.path.join(ANC_PATH, '{}.jpg'.format(uuid.uuid1())), image.numpy())
-# for file_name in os.listdir(os.path.join(POS_PATH)):
-#     img_path = os.path.join(POS_PATH, file_name)
-#     img = cv2.imread(img_path)
-#     augmented_images = data_aug(img) 
-    
-#     for image in augmented_images:
-#         cv2.imwrite(os.path.join(POS_PATH, '{}.jpg'.format(uuid.uuid1())), image.numpy())
-# %%
