@@ -45,6 +45,31 @@ while cap.isOpened():
         print("Error: Failed to capture image or captured an empty frame.")
         continue
 
+    # Get the frame dimensions
+    h, w = frame.shape[:2]
+
+    # Calculate the center of the frame
+    center_x, center_y = w // 2, h // 2
+
+    # Define the size of the cropped region
+    crop_size = 250
+    half_crop_size = crop_size // 2
+
+    # Calculate the cropping coordinates
+    x1 = max(center_x - half_crop_size, 0)
+    y1 = max(center_y - half_crop_size, 0)
+    x2 = min(center_x + half_crop_size, w)
+    y2 = min(center_y + half_crop_size, h)
+
+    # Crop the center region
+    cropped_frame = frame[y1:y2, x1:x2]
+
+    # Resize the cropped frame to ensure it is 250x250 pixels
+    resized_frame = cv2.resize(cropped_frame, (250, 250))
+
+    # Display the resized frame
+    cv2.imshow('Resized Frame', resized_frame)
+
     cv2.putText(frame, 'Ready? Press "Q" to start capturing', (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.3, (0, 255, 0), 3, cv2.LINE_AA)
     cv2.imshow('frame', frame)
     key = cv2.waitKey(25)
