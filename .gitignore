@@ -2,4 +2,3 @@
 *.tgz
 
 # ignore collect_data.py bc of local repos
-collect_data.py
