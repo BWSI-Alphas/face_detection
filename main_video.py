@@ -6,10 +6,11 @@ from simple_facerec import SimpleFacerec
 sfr = SimpleFacerec()
 sfr.load_encoding_images(r'C:\Users\Noah Lee\OneDrive\Documents\GitHub\face_detection\data')
 
-# Initialize video capture
-cap = cv2.VideoCapture(0)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+URL = "http://192.168.1.121:81/stream"
+
+# Open video capture from the URL
+cap = cv2.VideoCapture(URL)
+
 
 counter = 0
 face_locations = []
@@ -28,7 +29,7 @@ def check_face(frame):
 while True:
     ret, frame = cap.read()
     if ret:
-        if counter % 30 == 0:  # Run face detection every 30 iterations
+        if counter % 10 == 0:  # Run face detection every 30 iterations
             try:
                 threading.Thread(target=check_face, args=(frame.copy(),)).start()
             except Exception as e:
