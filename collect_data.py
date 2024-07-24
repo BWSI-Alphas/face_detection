@@ -27,10 +27,6 @@ start_time = time.time()
 while True:
     ret, frame = cap.read()
     if ret:
-        # Draw the start button
-        cv2.rectangle(frame, (20, 20), (120, 70), (0, 255, 0), -1)
-        cv2.putText(frame, 'Press "S" to Start', (30, 55), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2, cv2.LINE_AA)
-
         # Get the frame dimensions
         h, w = frame.shape[:2]
 
@@ -53,35 +49,34 @@ while True:
         # Resize the cropped frame to ensure it is 400x400 pixels
         resized_frame = cv2.resize(cropped_frame, (400, 400))
 
-        # Display the cropped frame
-        cv2.imshow('Stream', resized_frame)
+        # Show the cropped frame
+        cv2.imshow('Cropped Frame', resized_frame)
 
-        # Check for key presses
-        key = cv2.waitKey(1)
-        if key == ord('s') and not capture_images:
-            capture_images = True
-            image_counter = 0
-            start_time = time.time()
-            print("Capture started")
+        # Capture images every 0.5 seconds
+        if capture_images and time.time() - start_time >= interval:
+            if image_counter < num_images:
+                # Save the frame to the 'data' folder
+                filename = os.path.join(DATA_PATH, f'{user_name}_{image_counter + 1}.jpg')
+                cv2.imwrite(filename, resized_frame)
+                print(f'Saved {filename}')
+                
+                image_counter += 1
+                start_time = time.time()
+            else:
+                capture_images = False
+                print("Finished capturing images.")
 
-        if capture_images:
-            # Capture images every 0.5 seconds
-            if time.time() - start_time >= interval:
-                if image_counter < num_images:
-                    # Save the frame to the 'data' folder
-                    filename = os.path.join(DATA_PATH, f'{user_name}_{image_counter + 1}.jpg')
-                    cv2.imwrite(filename, resized_frame)
-                    print(f'Saved {filename}')
-                    image_counter += 1
-                    start_time = time.time()  # Reset the timer
+        # Show the continuous stream
+        cv2.imshow('Live Stream', frame)
 
-                if image_counter >= num_images:
-                    print("Capture complete")
-                    break  # Exit after capturing the required number of images
-
-        # Exit the loop if 'q' is pressed
-        if key == ord('q'):
-            break
+    # Check for key presses
+    key = cv2.waitKey(1)
+    if key == ord("q"):
+        break
+    elif key == ord("c"):
+        capture_images = True
+        image_counter = 0
+        start_time = time.time()
 
 # Release the capture and close windows
 cap.release()
