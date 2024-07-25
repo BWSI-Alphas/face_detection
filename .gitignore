@@ -2,3 +2,4 @@
 *.tgz
 
 # ignore collect_data.py bc of local repos
+/__pycache__
