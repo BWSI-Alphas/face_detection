@@ -5,8 +5,6 @@ import cv2
 import numpy as np
 import math
 
-currentDir = r'C:\Users\Noah Lee\OneDrive\Documents\GitHub\face_detection\faces'
-
 def face_confidence(face_distance, face_match_threshold=0.6):
     range = 1.0 - face_match_threshold  
     linear_val = (1.0 - face_distance) / (range * 2.0)
@@ -17,7 +15,7 @@ def face_confidence(face_distance, face_match_threshold=0.6):
         value = (linear_val + ((1.0 - linear_val) * math.pow((linear_val - 0.5) * 2, 0.2))) * 100
         return str(round(value, 2)) + '%'
     
-class FaceRecognition:
+class FaceRecognition():
     face_locations = []
     face_encodings = []
     face_names = []
@@ -25,12 +23,13 @@ class FaceRecognition:
     known_face_names = []
     process_current_frame = True
     
-    def __init__(self):
+    def __init__(self, currentDir):
+        self.currentDir = currentDir
         self.encode_faces()
     
     def encode_faces(self):
-        for image_file in os.listdir(currentDir):
-            image_path = os.path.join(currentDir, image_file)
+        for image_file in os.listdir(self.currentDir):
+            image_path = os.path.join(self.currentDir, image_file)
             try:
                 print(f"Processing image at: {image_path}")
                 face_image = face_recognition.load_image_file(image_path)
@@ -91,7 +90,9 @@ class FaceRecognition:
         return recognized, frame
 
 if __name__ == '__main__':
-    fr = FaceRecognition()
+    currentDir = r'C:\Users\Noah Lee\OneDrive\Documents\GitHub\face_detection\faces'
+
+    fr = FaceRecognition(currentDir)
     URL = "http://192.168.1.121:81/stream"
     video_capture = cv2.VideoCapture(URL)
     
@@ -109,9 +110,9 @@ if __name__ == '__main__':
 
         if frame_counter % 1 == 0:
             recognized, annotated_frame = fr.process_frame(frame)
-            cv2.imshow('Face Recognition', annotated_frame)
-        else:
-            cv2.imshow('Face Recognition', frame)
+            frame =  annotated_frame
+
+        cv2.imshow('Face Recognition', frame)
         
         if cv2.waitKey(1) == ord('q'):
             break
