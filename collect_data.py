@@ -14,10 +14,10 @@ cap.set(cv2.CAP_PROP_FRAME_WIDTH, 300)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 300)
 
 # User's name for the file
-user_name = "Noah Lee"  # Change this to the desired name
+user_name = "Jonah"  # Change this to the desired name
 
 # Number of images to capture
-num_images = 10
+num_images = 1
 interval = 0.5  # Interval in seconds
 
 image_counter = 0
